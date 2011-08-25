@@ -1,0 +1,23 @@
+if [ -f /etc/bash_completion.d/git ]; then
+    . /etc/bash_completion.d/git
+fi
+
+parse_svn_status() {
+    local REV=$(                # get svn revision number
+        svn info 2>/dev/null | grep Revision | sed -e 's/Revision: //'
+    )
+    [ "$REV" ] || return        # stop now if not a working copy
+
+    local STATUS=(              # create an array
+        # svn status items (second column is always ' ', 'C', or 'M')
+        $( svn st | grep '^[^ ][ CM]' | sed -Ee 's/^(.).*$/\1/' | gawk 'x[$0]++ == 0' ) 
+    )
+    ST=""
+    if [ -n "${STATUS[*]}" ]; then
+        ST=" ${STATUS}"
+    fi
+
+    echo " (r$REV$ST) "
+}
+                                                                    
+PS1='\[\033[01;33m\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[\033[1;31m\]$(__git_ps1 " [%s] ")$(parse_svn_status)\[\033[00m\]\$ '
